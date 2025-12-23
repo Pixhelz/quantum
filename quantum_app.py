@@ -7,7 +7,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
 # --- 1. SAYFA VE MOBİL AYARLARI ---
 st.set_page_config(page_title="Quantum Vault", page_icon="🔐", layout="centered")
 
-# Dil Hafızası (Session State)
+# Dil Hafızası
 if 'lang' not in st.session_state:
     st.session_state.lang = "Türkçe"
 
@@ -30,7 +30,7 @@ T = {
         "job_label": "Job ID girin:",
         "fetch_btn": "Sonucu Getir",
         "success": "Bağlantı Başarılı!",
-        "about": "Bu proje bir 12. sınıf öğrencisi tarafından geliştirilmiştir."
+        "about": "Bu proje bir lise öğrencisi tarafından geliştirilmiştir."
     },
     "English": {
         "title": "🔐 Quantum Vault",
@@ -42,20 +42,22 @@ T = {
         "job_label": "Enter Job ID:",
         "fetch_btn": "Fetch Result",
         "success": "Connection Successful!",
-        "about": "This project was developed by a 12th-grade student."
+        "about": "This project was developed by a highschool student."
     }
 }
 txt = T[st.session_state.lang]
 
-# --- 2. GÜVENLİ IBM BAĞLANTISI (Hata Giderilmiş Versiyon) ---
+# --- 2. GÜVENLİ IBM BAĞLANTISI ---
 def get_ibm_service():
+    # Render'daki 'IBM_QUANTUM_TOKEN' değişkenini okur
     ibm_token = os.environ.get("IBM_QUANTUM_TOKEN")
     try:
         if ibm_token:
-            # HATA BURADAYDI: Kanal ismini güncelledik
+            # En son IBM kanal standardını kullanıyoruz
             return QiskitRuntimeService(channel="ibm_quantum_platform", token=ibm_token)
         else:
-            return QiskitRuntimeService()
+            # Eğer token yoksa yerel kayıtlı hesabı denemeye çalışır
+            return QiskitRuntimeService(channel="ibm_quantum_platform")
     except Exception as e:
         st.error(f"Bağlantı Hatası / Connection Error: {e}")
         return None
@@ -85,30 +87,31 @@ with col1:
     target_val = st.slider(txt["slider"], 0, 7, 3)
 with col2:
     st.write("") 
-    # Benzersiz key ekledik: "fire_button_unique"
-    run_button = st.button(txt["fire_btn"], use_container_width=True, key="fire_button_unique")
+    run_button = st.button(txt["fire_btn"], use_container_width=True, key="fire_btn_final")
 
 if run_button:
     service = get_ibm_service()
     if service:
-        with st.spinner('🚀 Processing...'):
-            backend = service.backend("ibm_torino")
-            circuit = build_quantum_search_engine(target_val)
-            pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
-            isa_circuit = pm.run(circuit)
-            sampler = Sampler(backend)
-            job = sampler.run([isa_circuit])
-            st.success(f"ID: {job.job_id()}")
-            st.subheader(txt["circuit_header"])
-            st.text(str(circuit.draw(output='text')))
+        with st.spinner('🚀 Processing on IBM Torino...'):
+            try:
+                backend = service.backend("ibm_torino")
+                circuit = build_quantum_search_engine(target_val)
+                pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+                isa_circuit = pm.run(circuit)
+                sampler = Sampler(backend)
+                job = sampler.run([isa_circuit])
+                st.success(f"ID: {job.job_id()}")
+                st.subheader(txt["circuit_header"])
+                st.text(str(circuit.draw(output='text')))
+            except Exception as e:
+                st.error(f"Hata: {e}")
 
 # --- 5. SONUÇ SORGULAMA ---
 st.divider()
 st.subheader(txt["recovery_header"])
-job_id_input = st.text_input(txt["job_label"], key="job_id_input_unique")
+job_id_input = st.text_input(txt["job_label"], key="job_input_final")
 
-# Benzersiz key ekledik: "fetch_button_unique"
-if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_button_unique"):
+if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_btn_final"):
     service = get_ibm_service()
     if service:
         try:
@@ -118,6 +121,7 @@ if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_button_uniqu
                 counts = job.result()[0].data.meas.get_counts()
                 st.success(txt["success"])
                 st.bar_chart(counts)
+                st.write(counts)
             else:
                 st.warning(f"Status: {status}")
         except Exception as e:
