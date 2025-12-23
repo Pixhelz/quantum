@@ -1,25 +1,20 @@
 import streamlit as st
 import os
-import matplotlib.pyplot as plt
 from qiskit import QuantumCircuit
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2 as Sampler
 
-# --- 1. MOBİL AYARLAR VE SAYFA YAPISI ---
-st.set_page_config(
-    page_title="Quantum Vault", 
-    page_icon="🔐", 
-    layout="centered" # Mobil ve tabletlerde daha iyi odaklanma sağlar
-)
+# --- 1. SAYFA VE MOBİL AYARLARI ---
+st.set_page_config(page_title="Quantum Vault", page_icon="🔐", layout="centered")
 
-# Dil Hafızası
+# Dil Hafızası (Session State)
 if 'lang' not in st.session_state:
     st.session_state.lang = "Türkçe"
 
 def change_lang():
     st.session_state.lang = st.session_state.lang_selector
 
-# Sidebar - Mobil kullanıcılar burayı sol üst menüden açar
+# Sidebar Dil Seçimi
 st.sidebar.selectbox("Dil / Language", ["Türkçe", "English"], 
                     index=0 if st.session_state.lang == "Türkçe" else 1,
                     on_change=change_lang, key="lang_selector")
@@ -35,7 +30,7 @@ T = {
         "job_label": "Job ID girin:",
         "fetch_btn": "Sonucu Getir",
         "success": "Bağlantı Başarılı!",
-        "about": "Bu proje bir lise öğrencisi tarafından geliştirilmiştir."
+        "about": "Bu proje bir 12. sınıf öğrencisi tarafından geliştirilmiştir."
     },
     "English": {
         "title": "🔐 Quantum Vault",
@@ -47,20 +42,19 @@ T = {
         "job_label": "Enter Job ID:",
         "fetch_btn": "Fetch Result",
         "success": "Connection Successful!",
-        "about": "This project was developed by a highschool student."
+        "about": "This project was developed by a 12th-grade student."
     }
 }
 txt = T[st.session_state.lang]
 
-# --- 2. GÜVENLİ IBM BAĞLANTISI (Render Uyumlu) ---
+# --- 2. GÜVENLİ IBM BAĞLANTISI (Hata Giderilmiş Versiyon) ---
 def get_ibm_service():
-    # Render üzerindeki Environment Variable'ı oku
     ibm_token = os.environ.get("IBM_QUANTUM_TOKEN")
     try:
         if ibm_token:
-            return QiskitRuntimeService(channel="ibm_quantum", token=ibm_token)
+            # HATA BURADAYDI: Kanal ismini güncelledik
+            return QiskitRuntimeService(channel="ibm_quantum_platform", token=ibm_token)
         else:
-            # Yerel bilgisayarda çalışırken kayıtlı hesabı kullanır
             return QiskitRuntimeService()
     except Exception as e:
         st.error(f"Bağlantı Hatası / Connection Error: {e}")
@@ -82,39 +76,39 @@ def build_quantum_search_engine(target_number):
     qc.measure_all()
     return qc
 
-# --- 4. ARAYÜZ ---
+# --- 4. ANA ARAYÜZ ---
 st.title(txt["title"])
 st.info(txt["desc"])
 
-# Mobilde daha rahat kullanılması için sütunlara bölelim
 col1, col2 = st.columns([2, 1])
 with col1:
     target_val = st.slider(txt["slider"], 0, 7, 3)
 with col2:
-    st.write("") # Boşluk
-    run_button = st.button(txt["fire_btn"], use_container_width=True)
+    st.write("") 
+    # Benzersiz key ekledik: "fire_button_unique"
+    run_button = st.button(txt["fire_btn"], use_container_width=True, key="fire_button_unique")
 
 if run_button:
     service = get_ibm_service()
     if service:
-        backend = service.backend("ibm_torino")
-        circuit = build_quantum_search_engine(target_val)
-        pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
-        isa_circuit = pm.run(circuit)
-        
-        sampler = Sampler(backend)
-        job = sampler.run([isa_circuit])
-        st.success(f"ID: {job.job_id()}")
-        # Mobilde devre şeması çok genişleyebilir, bu yüzden genişliği kısıtlıyoruz
-        st.subheader(txt["circuit_header"])
-        st.text(str(circuit.draw(output='text')))
+        with st.spinner('🚀 Processing...'):
+            backend = service.backend("ibm_torino")
+            circuit = build_quantum_search_engine(target_val)
+            pm = generate_preset_pass_manager(optimization_level=1, backend=backend)
+            isa_circuit = pm.run(circuit)
+            sampler = Sampler(backend)
+            job = sampler.run([isa_circuit])
+            st.success(f"ID: {job.job_id()}")
+            st.subheader(txt["circuit_header"])
+            st.text(str(circuit.draw(output='text')))
 
 # --- 5. SONUÇ SORGULAMA ---
 st.divider()
 st.subheader(txt["recovery_header"])
-job_id_input = st.text_input(txt["job_label"])
+job_id_input = st.text_input(txt["job_label"], key="job_id_input_unique")
 
-if st.button(txt["fetch_btn"], use_container_width=True):
+# Benzersiz key ekledik: "fetch_button_unique"
+if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_button_unique"):
     service = get_ibm_service()
     if service:
         try:
