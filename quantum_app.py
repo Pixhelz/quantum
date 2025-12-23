@@ -49,19 +49,21 @@ txt = T[st.session_state.lang]
 
 # --- 2. GÜVENLİ IBM BAĞLANTISI ---
 def get_ibm_service():
-    # Render'daki 'IBM_QUANTUM_TOKEN' değişkenini okur
+    # 1. Önce Render/Sistem değişkenini kontrol et
     ibm_token = os.environ.get("IBM_QUANTUM_TOKEN")
+    
     try:
-        if ibm_token:
-            # En son IBM kanal standardını kullanıyoruz
+        if ibm_token and len(ibm_token) > 10:
+            # Render üzerindeyken bu çalışır
             return QiskitRuntimeService(channel="ibm_quantum_platform", token=ibm_token)
         else:
-            # Eğer token yoksa yerel kayıtlı hesabı denemeye çalışır
-            return QiskitRuntimeService(channel="ibm_quantum_platform")
+            # Bilgisayarında çalışırken (Test kodunun onayladığı yöntem)
+            # Eğer token'ı buraya direkt yapıştırırsan HATA RİSKİ SIFIR olur
+            return QiskitRuntimeService(channel="ibm_quantum_platform", token="BURAYA_YENI_SIFREYI_YAPISTIR")
+            
     except Exception as e:
         st.error(f"Bağlantı Hatası / Connection Error: {e}")
         return None
-
 # --- 3. KUANTUM MOTORU ---
 def build_quantum_search_engine(target_number):
     qc = QuantumCircuit(3)
@@ -128,3 +130,4 @@ if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_btn_final"):
             st.error(f"Error: {e}")
 
 st.sidebar.caption(txt["about"])
+
