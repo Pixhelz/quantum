@@ -1,4 +1,5 @@
 streamlit
 qiskit
 qiskit-ibm-runtime
+numpy
 matplotlib
