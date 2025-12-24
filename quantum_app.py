@@ -30,7 +30,7 @@ T = {
         "job_label": "Job ID girin:",
         "fetch_btn": "Sonucu Getir",
         "success": "Bağlantı Başarılı!",
-        "about": "Bu proje bir lise öğrencisi tarafından geliştirilmiştir."
+        "about": "Bu proje bir lise öğrencisi tarafından geliştirilmiştir. IBM Quantum destekli çalışır. Eren Türk."
     },
     "English": {
         "title": "🔐 Quantum Vault",
@@ -42,7 +42,7 @@ T = {
         "job_label": "Enter Job ID:",
         "fetch_btn": "Fetch Result",
         "success": "Connection Successful!",
-        "about": "This project was developed by a highschool student."
+        "about": "This project was developed by a highschool student. Powered by IBM Quantum. Eren Türk."
     }
 }
 txt = T[st.session_state.lang]
@@ -130,4 +130,5 @@ if st.button(txt["fetch_btn"], use_container_width=True, key="fetch_btn_final"):
             st.error(f"Error: {e}")
 
 st.sidebar.caption(txt["about"])
+
 
