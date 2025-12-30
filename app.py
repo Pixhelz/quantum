@@ -6,6 +6,11 @@ from pydantic import BaseModel
 from cryptography.fernet import Fernet
 from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
 from qiskit import QuantumCircuit, transpile
+from fastapi.responses import FileResponse
+
+@app.get("/")
+async def read_index():
+    return FileResponse('index.html')
 
 app = FastAPI()
 
@@ -159,3 +164,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
 
     uvicorn.run(app, host="0.0.0.0", port=port)
+
