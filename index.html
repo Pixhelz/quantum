@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Quantum Final Fix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .message-bubble {
+            width: fit-content !important;
+            max-width: 85% !important;
+            word-break: break-word;
+            display: block; /* Genişliği sadece içeriğe odaklar */
+}
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; overflow: hidden; }
+        .glass { background: rgba(30, 41, 59, 0.98); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* --- MOBİL İÇİN KÖKTEN ÇÖZÜM --- */
+        @media (max-width: 767px) {
+            #sidebar {
+                position: fixed !important;
+                top: 0; left: 0; bottom: 0;
+                width: 80%;
+                z-index: 99999 !important; /* DAHA ÜSTÜ YOK! */
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                visibility: hidden;
+            }
+            #sidebar.open { 
+                transform: translateX(0); 
+                visibility: visible;
+                pointer-events: auto !important; 
+            }
+            /* Karartmayı sidebar içine değil, tamamen dışarıya ve alta alıyoruz */
+            #overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.8);
+                z-index: 99998 !important; /* Menünün tam altı */
+                display: none;
+            }
+            #overlay.open { display: block; }
+        }
+
+        @media (min-width: 768px) {
+            #sidebar { transform: none !important; visibility: visible !important; position: relative !important; width: 320px; z-index: 10; }
+            #overlay { display: none !important; }
+        }
+
+    </style>
+</head>
+<body class="h-screen w-screen flex overflow-hidden bg-slate-950">
+
+    <div id="overlay" onclick="toggleMenu()"></div>
+
+    <aside id="sidebar" class="glass flex flex-col border-r border-slate-800 h-full">
+        <div class="p-6 border-b border-slate-800 flex justify-between items-center h-24">
+            <div class="truncate mr-4">
+                <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Kullanıcı</p>
+                <span id="me-display" class="font-bold text-xl text-white">@yükleniyor</span>
+            </div>
+            <button onclick="logout()" class="p-3 bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-all active:scale-95" style="position: relative; z-index: 100001;">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+            </button>
+        </div>
+        <div id="contact-list" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/40"></div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-950">
+        <header class="p-4 border-b border-slate-800 flex items-center bg-slate-900/60 h-20">
+            <button onclick="toggleMenu()" class="md:hidden mr-4 p-3 bg-indigo-600 rounded-xl text-white active:scale-90 shadow-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div class="flex-1">
+                <h2 id="chat-header" class="font-bold text-white text-lg truncate uppercase">Sohbet Seçin</h2>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-[9px] text-green-500 font-bold uppercase">Quantum Live</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-4"></div>
+
+        <footer class="p-4 bg-slate-900/90 border-t border-slate-800">
+            <div class="flex gap-2 mb-3">
+                <input id="target-user" type="text" placeholder="Kime" class="w-20 bg-black/40 p-3 rounded-xl border border-slate-700 text-xs text-white">
+                <input id="msg-input" type="text" placeholder="Mesaj..." class="flex-1 bg-black/40 p-3 rounded-xl border border-slate-700 text-sm text-white">
+                <button onclick="send(false)" class="bg-indigo-600 p-4 rounded-xl active:scale-90"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="flex-1 bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-600 text-center cursor-pointer">
+                    <span class="text-[10px] text-indigo-300 font-bold uppercase">Dosya Ekle</span>
+                    <input type="file" id="file-input" class="hidden" onchange="document.getElementById('file-status').innerText = this.files[0].name">
+                    <span id="file-status" class="text-[9px] text-slate-500 ml-2"></span>
+                </label>
+                <button onclick="send(true)" class="bg-emerald-600 px-6 py-3 rounded-xl font-bold text-[10px] text-white uppercase active:scale-95">Yükle</button>
+            </div>
+        </footer>
+    </main>
+
+    <div id="auth-screen" class="fixed inset-0 z-[200000] bg-slate-950 flex items-center justify-center p-6">
+        <div class="w-full max-w-sm p-8 glass rounded-3xl text-center shadow-2xl">
+            <h1 class="text-4xl font-black bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent italic mb-8">Q-PRO</h1>
+            <div class="space-y-4">
+                <input id="u_name" type="text" placeholder="Kullanıcı Adı" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white outline-none">
+                <input id="u_pass" type="password" placeholder="Şifre" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white outline-none">
+                <button onclick="handleAuth('login')" class="w-full bg-indigo-600 p-4 rounded-2xl font-bold text-white shadow-lg">GİRİŞ YAP</button>
+                <button onclick="handleAuth('register')" class="w-full text-slate-500 text-xs mt-2">Kayıt Ol</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://127.0.0.1:8000";
+        let currentUser = localStorage.getItem('q_user');
+        let activeChat = null;
+
+        if(currentUser) showApp();
+
+        function toggleMenu() {
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('overlay');
+            sb.classList.toggle('open');
+            ov.classList.toggle('open');
+        }
+
+        function showApp() {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('me-display').innerText = "@" + currentUser;
+            sync(); setInterval(sync, 4000);
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        async function handleAuth(type) {
+            const username = document.getElementById('u_name').value;
+            const password = document.getElementById('u_pass').value;
+            const res = await fetch(`${API}/${type}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username, password})
+            });
+            if(res.ok) {
+                if(type === 'login') { localStorage.setItem('q_user', username); currentUser = username; showApp(); }
+                else alert("Başarılı!");
+            }
+        }
+
+        async function send(isFile) {
+            const receiver = document.getElementById('target-user').value || activeChat;
+            let content = document.getElementById('msg-input').value;
+            let fileName = "";
+            if(isFile) {
+                const fileObj = document.getElementById('file-input').files[0];
+                if(!fileObj) return;
+                fileName = fileObj.name;
+                const reader = new FileReader();
+                reader.readAsDataURL(fileObj);
+                reader.onload = async () => {
+                    await fetch(`${API}/send_message`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({sender: currentUser, receiver, content: reader.result, is_file: true, file_name: fileName})
+                    });
+                    sync();
+                };
+                return;
+            }
+            if(!receiver || !content) return;
+            await fetch(`${API}/send_message`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({sender: currentUser, receiver, content, is_file: false, file_name: ""})
+            });
+            document.getElementById('msg-input').value = "";
+            sync();
+        }
+
+        async function sync() {
+            const res = await fetch(`${API}/get_all_messages`);
+            const msgs = await res.json();
+            const contacts = [...new Set(msgs.filter(m => m.sender === currentUser || m.receiver === currentUser).map(m => m.sender === currentUser ? m.receiver : m.sender))];
+            
+            const listDiv = document.getElementById('contact-list');
+            listDiv.innerHTML = "";
+            contacts.forEach(c => {
+                const d = document.createElement('div');
+                d.className = `p-5 rounded-2xl cursor-pointer transition-all ${activeChat === c ? 'bg-indigo-600/30 border-l-4 border-indigo-500 shadow-lg' : 'bg-white/5 hover:bg-white/10'}`;
+                d.style.position = "relative";
+                d.style.zIndex = "100002"; // Tıklamayı garanti altına al
+                d.innerHTML = `<div class="font-bold text-sm text-white">${c}</div><div class="text-[8px] text-indigo-400 font-bold uppercase tracking-widest">Kuantum Bağlantısı</div>`;
+                d.onclick = () => {
+                    activeChat = c;
+                    document.getElementById('chat-header').innerText = "@" + c;
+                    document.getElementById('target-user').value = c;
+                    if(window.innerWidth < 768) toggleMenu();
+                    sync();
+                };
+                listDiv.appendChild(d);
+            });
+
+            if(activeChat) {
+                const box = document.getElementById('chat-box');
+                box.innerHTML = "";
+            msgs.filter(m => (m.sender === currentUser && m.receiver === activeChat) || (m.sender === activeChat && m.receiver === currentUser))
+            .forEach(m => {
+                const isMe = m.sender === currentUser;
+                box.innerHTML += `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} w-full mb-3">
+                        <div class="${isMe ? 'bg-indigo-600' : 'bg-slate-800'} p-3 px-4 rounded-2xl shadow-xl message-bubble text-white text-sm">
+                            ${m.is_file ? `<a href="${m.message}" download="${m.file_name}" class="bg-black/20 p-2 rounded block text-center font-bold">📁 ${m.file_name}</a>` : m.message}
+                            <p class="text-[9px] text-right text-slate-300/90 mt-1 font-medium tracking-tight">
+                                ${m.time}
+                            </p>
+                        </div>
+                    </div>`;
+            });
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>

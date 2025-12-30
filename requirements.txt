@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+qiskit-ibm-runtime
+cryptography
+python-multipart
