@@ -9,15 +9,15 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; overflow: hidden; }
         .glass { background: rgba(30, 41, 59, 0.98); backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.1); }
         
-        /* Mesaj Balonu Fix */
+        /* MESAJ BALONU KESİN ÇÖZÜM */
         .message-bubble {
             width: fit-content !important;
             max-width: 85% !important;
-            word-break: break-word;
-            display: block;
+            word-break: break-all !important; /* Uzun 'aaaaa' karakterlerini zorla alt satıra atar */
+            overflow-wrap: break-word !important;
+            display: inline-block;
         }
 
-        /* Mobil Menü ve Karartma Mantığı */
         @media (max-width: 767px) {
             #sidebar {
                 position: fixed !important;
@@ -34,8 +34,7 @@
                 pointer-events: auto !important; 
             }
             #overlay {
-                position: fixed;
-                inset: 0;
+                position: fixed; inset: 0;
                 background: rgba(0,0,0,0.8);
                 z-index: 99998 !important;
                 display: none;
@@ -84,13 +83,13 @@
 
         <footer class="p-4 bg-slate-900/90 border-t border-slate-800">
             <div class="flex gap-2 mb-3">
-                <input id="target-user" type="text" placeholder="Kime" class="w-20 bg-black/40 p-3 rounded-xl border border-slate-700 text-xs text-white outline-none focus:border-indigo-500">
-                <input id="msg-input" type="text" placeholder="Mesajınızı yazın..." class="flex-1 bg-black/40 p-3 rounded-xl border border-slate-700 text-sm text-white outline-none focus:border-indigo-500">
+                <input id="target-user" type="text" placeholder="Kime" class="w-20 bg-black/40 p-3 rounded-xl border border-slate-700 text-xs text-white outline-none">
+                <input id="msg-input" type="text" placeholder="Mesaj..." class="flex-1 bg-black/40 p-3 rounded-xl border border-slate-700 text-sm text-white outline-none">
                 <button onclick="send(false)" class="bg-indigo-600 p-4 rounded-xl active:scale-90"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
             </div>
             <div class="flex items-center gap-2">
-                <label class="flex-1 bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-600 text-center cursor-pointer hover:bg-slate-800/60 transition-colors">
-                    <span class="text-[10px] text-indigo-300 font-bold uppercase">Dosya Seç</span>
+                <label class="flex-1 bg-slate-800/40 p-3 rounded-xl border border-dashed border-slate-600 text-center cursor-pointer">
+                    <span class="text-[10px] text-indigo-300 font-bold uppercase">Dosya</span>
                     <input type="file" id="file-input" class="hidden" onchange="document.getElementById('file-status').innerText = this.files[0].name">
                     <span id="file-status" class="text-[9px] text-slate-500 ml-2"></span>
                 </label>
@@ -103,10 +102,10 @@
         <div class="w-full max-w-sm p-8 glass rounded-3xl text-center shadow-2xl">
             <h1 class="text-4xl font-black bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent italic mb-8">Q-PRO</h1>
             <div class="space-y-4">
-                <input id="u_name" type="text" placeholder="Kullanıcı Adı" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white outline-none">
-                <input id="u_pass" type="password" placeholder="Şifre" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white outline-none">
-                <button onclick="handleAuth('login')" class="w-full bg-indigo-600 p-4 rounded-2xl font-bold text-white shadow-lg active:scale-95">GİRİŞ YAP</button>
-                <button onclick="handleAuth('register')" class="w-full text-slate-500 text-xs mt-2 hover:text-indigo-400">Hesabın yok mu? Kayıt Ol</button>
+                <input id="u_name" type="text" placeholder="Kullanıcı" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white">
+                <input id="u_pass" type="password" placeholder="Şifre" class="w-full p-4 bg-slate-900 rounded-2xl border border-slate-700 text-white">
+                <button onclick="handleAuth('login')" class="w-full bg-indigo-600 p-4 rounded-2xl font-bold text-white shadow-lg">GİRİŞ</button>
+                <button onclick="handleAuth('register')" class="w-full text-slate-500 text-xs mt-2">Kayıt Ol</button>
             </div>
         </div>
     </div>
@@ -119,10 +118,8 @@
         if(currentUser) showApp();
 
         function toggleMenu() {
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('overlay');
-            sb.classList.toggle('open');
-            ov.classList.toggle('open');
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
         }
 
         function showApp() {
@@ -136,8 +133,6 @@
         async function handleAuth(type) {
             const username = document.getElementById('u_name').value;
             const password = document.getElementById('u_pass').value;
-            if(!username || !password) return alert("Eksik bilgi!");
-
             try {
                 const res = await fetch(`${API}/${type}`, {
                     method: 'POST',
@@ -146,23 +141,21 @@
                 });
                 if(res.ok) {
                     if(type === 'login') { localStorage.setItem('q_user', username); currentUser = username; showApp(); }
-                    else alert("Kayıt başarılı, giriş yapabilirsin kanka!");
+                    else alert("Kayıt ok!");
                 } else {
                     const err = await res.json();
-                    alert(err.detail || "İşlem başarısız.");
+                    alert(err.detail || "Hata!");
                 }
-            } catch (e) {
-                alert("Sunucuya bağlanılamadı. Render uyanıyor olabilir, lütfen 15 sn sonra tekrar dene.");
-            }
+            } catch (e) { alert("Sunucu uyanıyor olabilir, tekrar dene!"); }
         }
 
         async function send(isFile) {
             const receiver = document.getElementById('target-user').value || activeChat;
-            if(!receiver) return alert("Kime gönderiyoruz?");
+            if(!receiver) return;
             
             if(isFile) {
                 const fileObj = document.getElementById('file-input').files[0];
-                if(!fileObj) return alert("Dosya seçmedin!");
+                if(!fileObj) return;
                 const reader = new FileReader();
                 reader.readAsDataURL(fileObj);
                 reader.onload = async () => {
@@ -191,16 +184,15 @@
             if(!currentUser) return;
             try {
                 const res = await fetch(`${API}/get_all_messages`);
+                if(!res.ok) return;
                 const msgs = await res.json();
                 
-                // Kontak listesi (Tıklama garantili z-index ile)
                 const contacts = [...new Set(msgs.filter(m => m.sender === currentUser || m.receiver === currentUser).map(m => m.sender === currentUser ? m.receiver : m.sender))];
                 const listDiv = document.getElementById('contact-list');
                 listDiv.innerHTML = "";
                 contacts.forEach(c => {
                     const d = document.createElement('div');
                     d.className = `p-5 rounded-2xl cursor-pointer transition-all ${activeChat === c ? 'bg-indigo-600/30 border-l-4 border-indigo-500 shadow-lg' : 'bg-white/5 hover:bg-white/10'}`;
-                    d.style.position = "relative"; d.style.zIndex = "100002";
                     d.innerHTML = `<div class="font-bold text-sm text-white">${c}</div><div class="text-[8px] text-indigo-400 font-bold uppercase tracking-widest">Kuantum Bağlantısı</div>`;
                     d.onclick = () => {
                         activeChat = c;
@@ -212,7 +204,6 @@
                     listDiv.appendChild(d);
                 });
 
-                // Sohbet Kutusu (Fit Balonlar ve Net Saat)
                 if(activeChat) {
                     const box = document.getElementById('chat-box');
                     let html = "";
@@ -220,17 +211,19 @@
                     .forEach(m => {
                         const isMe = m.sender === currentUser;
                         html += `
-                            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} w-full">
-                                <div class="${isMe ? 'bg-indigo-600' : 'bg-slate-800'} p-3 px-4 rounded-2xl shadow-xl message-bubble text-white text-sm mb-1">
+                            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} w-full mb-2">
+                                <div class="${isMe ? 'bg-indigo-600' : 'bg-slate-800'} p-3 px-4 rounded-2xl shadow-xl message-bubble text-white text-sm">
                                     ${m.is_file ? `<a href="${m.message}" download="${m.file_name}" class="bg-black/20 p-2 rounded block text-center font-bold">📁 ${m.file_name}</a>` : m.message}
-                                    <p class="text-[9px] text-right text-slate-300 font-medium mt-1 tracking-tight italic opacity-90">${m.time}</p>
+                                    <p class="text-[9px] text-right text-slate-300/80 mt-1 font-medium tracking-tighter italic">
+                                        ${m.time}
+                                    </p>
                                 </div>
                             </div>`;
                     });
                     box.innerHTML = html;
                     box.scrollTop = box.scrollHeight;
                 }
-            } catch (e) { console.log("Sync bekliyor..."); }
+            } catch (e) { console.log("Hata:", e); }
         }
     </script>
 </body>
