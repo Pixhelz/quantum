@@ -34,7 +34,7 @@ db_messages = load_data(MESSAGES_FILE, [])
 
 # --- IBM TORINO BAĞLANTISI ---
 # Kendi API Key'inizi buraya tırnak içine yapıştırın
-IBM_API_KEY = "e62SmAIhQ5u7vvGhmamZX4E8otp_eCxMmIf2J38dMhai"
+IBM_API_KEY = os.environ.get("IBM_API_KEY")
 service = None
 backend = None
 
@@ -157,4 +157,5 @@ if __name__ == "__main__":
     import os
     # Render portu otomatik atar, yoksa 8000 kullanır
     port = int(os.environ.get("PORT", 8000))
+
     uvicorn.run(app, host="0.0.0.0", port=port)
